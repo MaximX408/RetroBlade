@@ -1,0 +1,1375 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RetroBlade Delta</title>
+    <style>
+        :root {
+            --primary: #5E72E4;
+            --primary-dark: #4A5ECF;
+            --secondary: #11CDEF;
+            --success: #2DCE89;
+            --danger: #F5365C;
+            --warning: #FB6340;
+            --dark: #32325D;
+            --light: #F7FAFC;
+            --gray: #E9ECEF;
+            --gray-dark: #ADB5BD;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background-color: var(--light);
+            color: var(--dark);
+            line-height: 1.6;
+            overscroll-behavior: none;
+        }
+
+        /* Delta-inspired UI */
+        .delta-container {
+            max-width: 768px;
+            margin: 0 auto;
+            padding: 0;
+            position: relative;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .delta-header {
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            color: white;
+            padding: 15px;
+            text-align: center;
+            position: relative;
+            z-index: 10;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .delta-title {
+            font-weight: 600;
+            font-size: 1.2rem;
+        }
+
+        .delta-tabs {
+            display: flex;
+            background: white;
+            border-bottom: 1px solid var(--gray);
+        }
+
+        .delta-tab {
+            flex: 1;
+            padding: 12px;
+            text-align: center;
+            font-weight: 500;
+            color: var(--gray-dark);
+            position: relative;
+            transition: all 0.2s;
+        }
+
+        .delta-tab.active {
+            color: var(--primary);
+        }
+
+        .delta-tab.active:after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 50%;
+            height: 3px;
+            background: var(--primary);
+            border-radius: 3px 3px 0 0;
+        }
+
+        .delta-content {
+            flex: 1;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+            background: white;
+        }
+
+        .delta-screen {
+            width: 100%;
+            background: black;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .delta-screen canvas {
+            width: 100%;
+            height: auto;
+            display: block;
+            image-rendering: pixelated;
+        }
+
+        .delta-controls {
+            padding: 15px;
+            background: white;
+            border-top: 1px solid var(--gray);
+        }
+
+        .delta-button {
+            background: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            padding: 10px 15px;
+            font-weight: 500;
+            font-size: 0.9rem;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            margin-right: 8px;
+            margin-bottom: 8px;
+        }
+
+        .delta-button:hover {
+            background: var(--primary-dark);
+        }
+
+        .delta-button.secondary {
+            background: var(--gray);
+            color: var(--dark);
+        }
+
+        .delta-button.danger {
+            background: var(--danger);
+        }
+
+        .delta-button.success {
+            background: var(--success);
+        }
+
+        .delta-button.warning {
+            background: var(--warning);
+        }
+
+        .delta-button.small {
+            padding: 6px 10px;
+            font-size: 0.8rem;
+        }
+
+        .delta-button-group {
+            display: flex;
+            flex-wrap: wrap;
+            margin-bottom: 10px;
+        }
+
+        .delta-card {
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            margin: 15px;
+            padding: 15px;
+        }
+
+        .delta-card-title {
+            font-weight: 600;
+            margin-bottom: 10px;
+            color: var(--dark);
+        }
+
+        .delta-list {
+            list-style: none;
+        }
+
+        .delta-list-item {
+            padding: 12px 0;
+            border-bottom: 1px solid var(--gray);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .delta-list-item:last-child {
+            border-bottom: none;
+        }
+
+        .delta-badge {
+            display: inline-block;
+            padding: 3px 8px;
+            border-radius: 10px;
+            font-size: 0.7rem;
+            font-weight: 600;
+            background: var(--gray);
+            color: var(--dark);
+        }
+
+        .delta-badge.primary {
+            background: var(--primary);
+            color: white;
+        }
+
+        .delta-badge.success {
+            background: var(--success);
+            color: white;
+        }
+
+        .delta-badge.warning {
+            background: var(--warning);
+            color: white;
+        }
+
+        .delta-switch {
+            position: relative;
+            display: inline-block;
+            width: 44px;
+            height: 24px;
+        }
+
+        .delta-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .delta-slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: var(--gray);
+            transition: .4s;
+            border-radius: 24px;
+        }
+
+        .delta-slider:before {
+            position: absolute;
+            content: "";
+            height: 18px;
+            width: 18px;
+            left: 3px;
+            bottom: 3px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+
+        input:checked + .delta-slider {
+            background-color: var(--primary);
+        }
+
+        input:checked + .delta-slider:before {
+            transform: translateX(20px);
+        }
+
+        .delta-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.5);
+            z-index: 100;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s;
+        }
+
+        .delta-modal.active {
+            opacity: 1;
+            pointer-events: all;
+        }
+
+        .delta-modal-content {
+            background: white;
+            border-radius: 14px;
+            width: 90%;
+            max-width: 400px;
+            max-height: 80vh;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+            transform: translateY(20px);
+            transition: transform 0.3s;
+        }
+
+        .delta-modal.active .delta-modal-content {
+            transform: translateY(0);
+        }
+
+        .delta-modal-header {
+            padding: 15px;
+            border-bottom: 1px solid var(--gray);
+            font-weight: 600;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .delta-modal-body {
+            padding: 15px;
+        }
+
+        .delta-modal-footer {
+            padding: 15px;
+            border-top: 1px solid var(--gray);
+            display: flex;
+            justify-content: flex-end;
+        }
+
+        .delta-form-group {
+            margin-bottom: 15px;
+        }
+
+        .delta-form-label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 500;
+        }
+
+        .delta-form-input {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid var(--gray);
+            border-radius: 8px;
+            font-family: inherit;
+        }
+
+        .delta-form-input:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
+
+        .delta-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+            gap: 10px;
+        }
+
+        .delta-game-card {
+            background: white;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+            transition: transform 0.2s;
+        }
+
+        .delta-game-card:active {
+            transform: scale(0.98);
+        }
+
+        .delta-game-card-image {
+            width: 100%;
+            height: 120px;
+            background: var(--gray);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--gray-dark);
+            font-size: 0.8rem;
+        }
+
+        .delta-game-card-title {
+            padding: 8px;
+            font-size: 0.8rem;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .delta-toast {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--dark);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 8px;
+            z-index: 1000;
+            opacity: 0;
+            transition: opacity 0.3s;
+            max-width: 90%;
+        }
+
+        .delta-toast.show {
+            opacity: 1;
+        }
+
+        @media (min-width: 768px) {
+            .delta-screen {
+                max-width: 600px;
+                margin: 0 auto;
+                border-radius: 8px;
+                overflow: hidden;
+                margin-top: 20px;
+                box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            }
+        }
+
+        /* Gamepad buttons */
+        .delta-gamepad-button {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: var(--gray);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 5px;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .delta-gamepad-button.active {
+            background: var(--primary);
+            color: white;
+        }
+
+        .delta-gamepad-layout {
+            display: flex;
+            justify-content: center;
+            margin: 20px 0;
+        }
+
+        .delta-gamepad-dpad {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            grid-template-rows: repeat(3, 1fr);
+            gap: 5px;
+        }
+
+        .delta-gamepad-dpad .delta-gamepad-button {
+            width: 30px;
+            height: 30px;
+        }
+
+        .delta-gamepad-dpad .center {
+            grid-column: 2;
+            grid-row: 2;
+            background: transparent;
+        }
+
+        .delta-gamepad-buttons {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            grid-template-rows: repeat(2, 1fr);
+            gap: 10px;
+            margin-left: 30px;
+        }
+
+        .delta-gamepad-buttons .delta-gamepad-button {
+            width: 40px;
+            height: 40px;
+        }
+
+        /* Cheats */
+        .delta-cheat-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .delta-cheat-item input[type="checkbox"] {
+            margin-right: 10px;
+        }
+
+        /* Multiplayer */
+        .delta-peer-status {
+            display: flex;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .delta-peer-status-indicator {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            margin-right: 8px;
+            background: var(--danger);
+        }
+
+        .delta-peer-status-indicator.connected {
+            background: var(--success);
+        }
+    </style>
+</head>
+<body>
+    <div class="delta-container">
+        <div class="delta-header">
+            <div class="delta-title">RetroBlade Delta</div>
+        </div>
+
+        <div class="delta-tabs">
+            <div class="delta-tab active" data-tab="games">Игры</div>
+            <div class="delta-tab" data-tab="emulator">Эмулятор</div>
+            <div class="delta-tab" data-tab="cheats">Читы</div>
+            <div class="delta-tab" data-tab="multiplayer">Сеть</div>
+            <div class="delta-tab" data-tab="settings">Настройки</div>
+        </div>
+
+        <div class="delta-content">
+            <!-- Games Tab -->
+            <div class="delta-tab-content active" id="games-tab">
+                <div class="delta-card">
+                    <div class="delta-button-group">
+                        <button class="delta-button" id="load-rom-button">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 5px;">
+                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                <polyline points="17 8 12 3 7 8"></polyline>
+                                <line x1="12" y1="3" x2="12" y2="15"></line>
+                            </svg>
+                            Загрузить ROM
+                        </button>
+                        <input type="file" id="rom-file" accept=".nes,.smc,.gba,.bin,.md,.zip,.nds,.iso,.sfc,.gb,.gbc,.chd,.pbp,.32x,.sms,.gg,.pce,.sg,.col,.a26,.lnx,.ws,.wsc,.ngp,.ngc,.jag,.fds,.vb" style="display: none;">
+                    </div>
+                </div>
+
+                <div class="delta-card">
+                    <div class="delta-card-title">Библиотека игр</div>
+                    <div class="delta-grid" id="game-library">
+                        <!-- Games will be added here -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Emulator Tab -->
+            <div class="delta-tab-content" id="emulator-tab">
+                <div class="delta-screen">
+                    <div id="retro-emulator"></div>
+                </div>
+
+                <div class="delta-controls">
+                    <div class="delta-button-group">
+                        <button class="delta-button secondary" id="emulator-start">Старт</button>
+                        <button class="delta-button secondary" id="emulator-reset">Сброс</button>
+                        <button class="delta-button secondary" id="emulator-save">Сохранить</button>
+                        <button class="delta-button secondary" id="emulator-load">Загрузить</button>
+                    </div>
+                    <div class="delta-button-group">
+                        <button class="delta-button small" id="quick-save-1">Быстрое 1</button>
+                        <button class="delta-button small" id="quick-load-1">Загрузить 1</button>
+                        <button class="delta-button small" id="quick-save-2">Быстрое 2</button>
+                        <button class="delta-button small" id="quick-load-2">Загрузить 2</button>
+                        <button class="delta-button small" id="quick-save-3">Быстрое 3</button>
+                        <button class="delta-button small" id="quick-load-3">Загрузить 3</button>
+                    </div>
+                    <div id="gamepad-status" style="font-size: 0.8rem; color: var(--gray-dark); margin-top: 10px;"></div>
+                </div>
+            </div>
+
+            <!-- Cheats Tab -->
+            <div class="delta-tab-content" id="cheats-tab">
+                <div class="delta-card">
+                    <div class="delta-card-title">Чит-коды</div>
+                    <div id="cheats-list">
+                        <!-- Cheats will be added here -->
+                    </div>
+                    <button class="delta-button secondary" style="margin-top: 10px;" id="add-cheat-button">Добавить чит</button>
+                </div>
+            </div>
+
+            <!-- Multiplayer Tab -->
+            <div class="delta-tab-content" id="multiplayer-tab">
+                <div class="delta-card">
+                    <div class="delta-card-title">Сетевой режим</div>
+                    <div class="delta-peer-status">
+                        <div class="delta-peer-status-indicator"></div>
+                        <span id="peer-status-text">Не подключено</span>
+                    </div>
+                    <div class="delta-button-group">
+                        <button class="delta-button" id="host-game-button">Создать игру</button>
+                        <button class="delta-button secondary" id="join-game-button">Присоединиться</button>
+                    </div>
+                </div>
+
+                <div class="delta-card" id="host-section" style="display: none;">
+                    <div class="delta-card-title">Игра хоста</div>
+                    <div class="delta-form-group">
+                        <label class="delta-form-label">ID комнаты</label>
+                        <input type="text" class="delta-form-input" id="room-id" readonly>
+                    </div>
+                    <button class="delta-button secondary" id="copy-room-id">Копировать ID</button>
+                </div>
+
+                <div class="delta-card" id="join-section" style="display: none;">
+                    <div class="delta-card-title">Присоединиться к игре</div>
+                    <div class="delta-form-group">
+                        <label class="delta-form-label">ID комнаты</label>
+                        <input type="text" class="delta-form-input" id="join-room-id" placeholder="Введите ID комнаты">
+                    </div>
+                    <button class="delta-button" id="connect-peer-button">Подключиться</button>
+                </div>
+            </div>
+
+            <!-- Settings Tab -->
+            <div class="delta-tab-content" id="settings-tab">
+                <div class="delta-card">
+                    <div class="delta-card-title">Внешний вид</div>
+                    <div class="delta-list-item">
+                        Тёмная тема
+                        <label class="delta-switch">
+                            <input type="checkbox" id="dark-theme-toggle">
+                            <span class="delta-slider"></span>
+                        </label>
+                    </div>
+                    <div class="delta-list-item">
+                        Пиксельное масштабирование
+                        <label class="delta-switch">
+                            <input type="checkbox" id="pixel-scaling-toggle" checked>
+                            <span class="delta-slider"></span>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="delta-card">
+                    <div class="delta-card-title">Управление</div>
+                    <div class="delta-list-item" id="configure-keyboard-button">
+                        Настройка клавиатуры
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <polyline points="9 18 15 12 9 6"></polyline>
+                        </svg>
+                    </div>
+                    <div class="delta-list-item" id="configure-gamepad-button">
+                        Настройка геймпада
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <polyline points="9 18 15 12 9 6"></polyline>
+                        </svg>
+                    </div>
+                </div>
+
+                <div class="delta-card">
+                    <div class="delta-card-title">О программе</div>
+                    <div class="delta-list-item">
+                        Версия
+                        <span class="delta-badge">1.0.0</span>
+                    </div>
+                    <div class="delta-list-item">
+                        Лицензия
+                        <span class="delta-badge">GPL-3.0</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modals -->
+    <div class="delta-modal" id="keyboard-config-modal">
+        <div class="delta-modal-content">
+            <div class="delta-modal-header">
+                Настройка клавиатуры
+                <button class="delta-button small secondary" id="close-keyboard-config">Готово</button>
+            </div>
+            <div class="delta-modal-body">
+                <div id="keyboard-controls-config">
+                    <!-- Keyboard controls will be added here -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="delta-modal" id="gamepad-config-modal">
+        <div class="delta-modal-content">
+            <div class="delta-modal-header">
+                Настройка геймпада
+                <button class="delta-button small secondary" id="close-gamepad-config">Готово</button>
+            </div>
+            <div class="delta-modal-body">
+                <div class="delta-gamepad-layout">
+                    <div class="delta-gamepad-dpad">
+                        <div class="delta-gamepad-button" data-button="up">↑</div>
+                        <div class="delta-gamepad-button" data-button="left">←</div>
+                        <div class="center"></div>
+                        <div class="delta-gamepad-button" data-button="right">→</div>
+                        <div class="delta-gamepad-button" data-button="down">↓</div>
+                    </div>
+                    <div class="delta-gamepad-buttons">
+                        <div class="delta-gamepad-button" data-button="a">A</div>
+                        <div class="delta-gamepad-button" data-button="b">B</div>
+                        <div class="delta-gamepad-button" data-button="start">Start</div>
+                        <div class="delta-gamepad-button" data-button="select">Select</div>
+                    </div>
+                </div>
+                <p style="text-align: center; margin-top: 20px; font-size: 0.8rem;">Нажмите кнопку, затем нажмите соответствующую кнопку на геймпаде</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="delta-modal" id="add-cheat-modal">
+        <div class="delta-modal-content">
+            <div class="delta-modal-header">
+                Добавить чит-код
+                <button class="delta-button small secondary" id="close-cheat-modal">Отмена</button>
+            </div>
+            <div class="delta-modal-body">
+                <div class="delta-form-group">
+                    <label class="delta-form-label">Название</label>
+                    <input type="text" class="delta-form-input" id="cheat-name" placeholder="Бесконечные жизни">
+                </div>
+                <div class="delta-form-group">
+                    <label class="delta-form-label">Код</label>
+                    <input type="text" class="delta-form-input" id="cheat-code" placeholder="0000-0000">
+                </div>
+                <div class="delta-form-group">
+                    <label class="delta-form-label">Описание</label>
+                    <textarea class="delta-form-input" id="cheat-description" rows="3" placeholder="Описание действия чита"></textarea>
+                </div>
+            </div>
+            <div class="delta-modal-footer">
+                <button class="delta-button" id="save-cheat-button">Сохранить</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="delta-toast" id="toast-message"></div>
+
+    <!-- EmulatorJS -->
+    <script src="https://cdn.jsdelivr.net/npm/emulatorjs@latest/main.js"></script>
+    <!-- PeerJS for multiplayer -->
+    <script src="https://unpkg.com/peerjs@1.4.7/dist/peerjs.min.js"></script>
+
+    <script>
+        // App state
+        const state = {
+            games: JSON.parse(localStorage.getItem('retroblade-games')) || [],
+            settings: JSON.parse(localStorage.getItem('retroblade-settings')) || {
+                darkTheme: true,
+                pixelScaling: true,
+                controls: {
+                    keyboard: {
+                        up: 'ArrowUp',
+                        down: 'ArrowDown',
+                        left: 'ArrowLeft',
+                        right: 'ArrowRight',
+                        a: 'Z',
+                        b: 'X',
+                        start: 'Enter',
+                        select: 'Shift'
+                    },
+                    gamepad: {
+                        a: 0,
+                        b: 1,
+                        start: 9,
+                        select: 8,
+                        up: 12,
+                        down: 13,
+                        left: 14,
+                        right: 15
+                    }
+                }
+            },
+            cheats: JSON.parse(localStorage.getItem('retroblade-cheats')) || {},
+            currentGame: null,
+            gamepadConnected: false,
+            peer: null,
+            peerConnection: null,
+            isHost: false
+        };
+
+        // Initialize emulator
+        const emulator = new EmulatorJS({
+            element: document.getElementById("retro-emulator"),
+            ui: "#retro-emulator",
+            cores: {
+                nes: "https://cdn.jsdelivr.net/npm/emulatorjs@latest/cores/nes.js",
+                snes: "https://cdn.jsdelivr.net/npm/emulatorjs@latest/cores/snes.js",
+                gba: "https://cdn.jsdelivr.net/npm/emulatorjs@latest/cores/gba.js",
+                psx: "https://cdn.jsdelivr.net/npm/emulatorjs@latest/cores/psx.js",
+                genesis: "https://cdn.jsdelivr.net/npm/emulatorjs@latest/cores/genesis.js",
+                nds: "https://cdn.jsdelivr.net/npm/emulatorjs@latest/cores/nds.js",
+                pce: "https://cdn.jsdelivr.net/npm/emulatorjs@latest/cores/pce.js",
+                sms: "https://cdn.jsdelivr.net/npm/emulatorjs@latest/cores/sms.js",
+                gb: "https://cdn.jsdelivr.net/npm/emulatorjs@latest/cores/gb.js",
+                gbc: "https://cdn.jsdelivr.net/npm/emulatorjs@latest/cores/gbc.js"
+            },
+            bios: {
+                'psx': 'https://cdn.jsdelivr.net/npm/emulatorjs@latest/bios/psx.bin'
+            }
+        });
+
+        // Core map
+        const coreMap = {
+            'nes': 'nes', 'fds': 'nes',
+            'sfc': 'snes', 'smc': 'snes',
+            'gb': 'gb', 'gbc': 'gbc',
+            'gba': 'gba',
+            'nds': 'nds',
+            'md': 'genesis', 'gen': 'genesis', 'smd': 'genesis',
+            'sms': 'sms', 'gg': 'sms',
+            '32x': 'genesis',
+            'bin': 'psx', 'cue': 'psx', 'img': 'psx', 'pbp': 'psx', 'chd': 'psx',
+            'pce': 'pce', 'sg': 'sms', 'col': 'sms', 'a26': 'nes', 'lnx': 'nes',
+            'ngp': 'ngp', 'ngc': 'ngp', 'vb': 'vb', 'ws': 'ws', 'wsc': 'wsc'
+        };
+
+        // Initialize UI
+        function initUI() {
+            // Apply theme
+            document.getElementById('dark-theme-toggle').checked = state.settings.darkTheme;
+            updateTheme();
+            
+            // Apply pixel scaling
+            document.getElementById('pixel-scaling-toggle').checked = state.settings.pixelScaling;
+            emulator.setOption('integerScaling', state.settings.pixelScaling);
+            
+            // Load game library
+            renderGameLibrary();
+            
+            // Load cheats
+            renderCheats();
+            
+            // Initialize multiplayer
+            initMultiplayer();
+        }
+
+        // Update theme
+        function updateTheme() {
+            if (state.settings.darkTheme) {
+                document.body.style.setProperty('--light', '#1A1A1A');
+                document.body.style.setProperty('--dark', '#F7FAFC');
+                document.body.style.setProperty('--gray', '#2D2D2D');
+                document.body.style.setProperty('--gray-dark', '#5E5E5E');
+            } else {
+                document.body.style.setProperty('--light', '#F7FAFC');
+                document.body.style.setProperty('--dark', '#32325D');
+                document.body.style.setProperty('--gray', '#E9ECEF');
+                document.body.style.setProperty('--gray-dark', '#ADB5BD');
+            }
+        }
+
+        // Render game library
+        function renderGameLibrary() {
+            const library = document.getElementById('game-library');
+            library.innerHTML = '';
+            
+            if (state.games.length === 0) {
+                library.innerHTML = '<p style="grid-column: 1 / -1; text-align: center; color: var(--gray-dark); padding: 20px;">Ваша библиотека пуста. Загрузите игры через кнопку "Загрузить ROM".</p>';
+                return;
+            }
+            
+            state.games.forEach((game, index) => {
+                const gameCard = document.createElement('div');
+                gameCard.className = 'delta-game-card';
+                gameCard.innerHTML = `
+                    <div class="delta-game-card-image">
+                        ${game.name}
+                    </div>
+                    <div class="delta-game-card-title">${game.name}</div>
+                `;
+                gameCard.addEventListener('click', () => loadGameFromLibrary(index));
+                library.appendChild(gameCard);
+            });
+        }
+
+        // Load game from library
+        function loadGameFromLibrary(index) {
+            const game = state.games[index];
+            state.currentGame = game;
+            
+            showToast(`Загрузка ${game.name}...`);
+            
+            fetch(game.romUrl)
+                .then(response => response.blob())
+                .then(blob => {
+                    const reader = new FileReader();
+                    reader.onload = function() {
+                        emulator.loadROM(reader.result, game.core);
+                        document.getElementById('emulator-start').disabled = false;
+                        document.getElementById('emulator-save').disabled = false;
+                        document.getElementById('emulator-load').disabled = false;
+                        
+                        // Switch to emulator tab
+                        document.querySelector('.delta-tab[data-tab="emulator"]').click();
+                        
+                        showToast(`${game.name} загружена!`);
+                    };
+                    reader.readAsDataURL(blob);
+                });
+        }
+
+        // Render cheats
+        function renderCheats() {
+            const cheatsList = document.getElementById('cheats-list');
+            cheatsList.innerHTML = '';
+            
+            if (!state.currentGame || !state.cheats[state.currentGame?.name]) {
+                cheatsList.innerHTML = '<p style="text-align: center; color: var(--gray-dark);">Нет доступных чит-кодов для текущей игры</p>';
+                return;
+            }
+            
+            state.cheats[state.currentGame.name].forEach((cheat, index) => {
+                const cheatItem = document.createElement('div');
+                cheatItem.className = 'delta-cheat-item';
+                cheatItem.innerHTML = `
+                    <input type="checkbox" id="cheat-${index}" ${cheat.enabled ? 'checked' : ''}>
+                    <label for="cheat-${index}" style="flex: 1; margin-left: 10px;">
+                        <div style="font-weight: 500;">${cheat.name}</div>
+                        <div style="font-size: 0.8rem; color: var(--gray-dark);">${cheat.code}</div>
+                        ${cheat.description ? `<div style="font-size: 0.8rem; color: var(--gray-dark); margin-top: 5px;">${cheat.description}</div>` : ''}
+                    </label>
+                    <button class="delta-button small danger" data-cheat-index="${index}">Удалить</button>
+                `;
+                
+                cheatItem.querySelector(`#cheat-${index}`).addEventListener('change', (e) => {
+                    state.cheats[state.currentGame.name][index].enabled = e.target.checked;
+                    localStorage.setItem('retroblade-cheats', JSON.stringify(state.cheats));
+                    applyCheats();
+                });
+                
+                cheatItem.querySelector('button').addEventListener('click', () => {
+                    state.cheats[state.currentGame.name].splice(index, 1);
+                    localStorage.setItem('retroblade-cheats', JSON.stringify(state.cheats));
+                    renderCheats();
+                });
+                
+                cheatsList.appendChild(cheatItem);
+            });
+        }
+
+        // Apply cheats to emulator
+        function applyCheats() {
+            if (!state.currentGame || !state.cheats[state.currentGame.name]) return;
+            
+            const activeCheats = state.cheats[state.currentGame.name]
+                .filter(cheat => cheat.enabled)
+                .map(cheat => cheat.code);
+            
+            emulator.setCheats(activeCheats);
+        }
+
+        // Initialize multiplayer
+        function initMultiplayer() {
+            // PeerJS initialization will happen when user clicks host/join
+        }
+
+        // Show toast message
+        function showToast(message, duration = 3000) {
+            const toast = document.getElementById('toast-message');
+            toast.textContent = message;
+            toast.classList.add('show');
+            
+            setTimeout(() => {
+                toast.classList.remove('show');
+            }, duration);
+        }
+
+        // Gamepad detection
+        function checkGamepads() {
+            const gamepads = navigator.getGamepads ? navigator.getGamepads() : [];
+            if (gamepads[0]) {
+                if (!state.gamepadConnected) {
+                    document.getElementById("gamepad-status").textContent = "Геймпад подключен: " + gamepads[0].id;
+                    state.gamepadConnected = true;
+                }
+            } else {
+                if (state.gamepadConnected) {
+                    document.getElementById("gamepad-status").textContent = "Геймпад не подключен";
+                    state.gamepadConnected = false;
+                }
+            }
+            requestAnimationFrame(checkGamepads);
+        }
+
+        // Event listeners
+        document.getElementById('load-rom-button').addEventListener('click', () => {
+            document.getElementById('rom-file').click();
+        });
+
+        document.getElementById('rom-file').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                const romData = event.target.result;
+                const fileName = file.name;
+                const fileExt = fileName.split('.').pop().toLowerCase();
+                
+                // Determine core
+                const core = coreMap[fileExt];
+                
+                if (!core) {
+                    showToast(`Формат .${fileExt} не поддерживается`, 3000);
+                    return;
+                }
+
+                showToast(`Загрузка ${fileName}...`);
+                
+                // Add to library
+                const game = {
+                    name: fileName,
+                    core: core,
+                    romUrl: URL.createObjectURL(file),
+                    added: new Date().toISOString()
+                };
+                
+                state.games.push(game);
+                state.currentGame = game;
+                localStorage.setItem('retroblade-games', JSON.stringify(state.games));
+                
+                // Load the game
+                emulator.loadROM(romData, core);
+                document.getElementById('emulator-start').disabled = false;
+                document.getElementById('emulator-save').disabled = false;
+                document.getElementById('emulator-load').disabled = false;
+                
+                // Switch to emulator tab
+                document.querySelector('.delta-tab[data-tab="emulator"]').click();
+                
+                showToast(`${fileName} загружена!`);
+                
+                // Render updated library
+                renderGameLibrary();
+            };
+            
+            // iOS fix
+            if (/iPad|iPhone|iPod/.test(navigator.userAgent)) {
+                reader.readAsArrayBuffer(file);
+            } else {
+                reader.readAsDataURL(file);
+            }
+        });
+
+        // Emulator controls
+        document.getElementById('emulator-start').addEventListener('click', () => {
+            emulator.start();
+        });
+
+        document.getElementById('emulator-reset').addEventListener('click', () => {
+            emulator.reset();
+        });
+
+        document.getElementById('emulator-save').addEventListener('click', () => {
+            emulator.saveState();
+            showToast('Состояние сохранено');
+        });
+
+        document.getElementById('emulator-load').addEventListener('click', () => {
+            emulator.loadState();
+            showToast('Состояние загружено');
+        });
+
+        // Quick save/load
+        [1, 2, 3].forEach(slot => {
+            document.getElementById(`quick-save-${slot}`).addEventListener('click', () => {
+                emulator.saveState(slot);
+                showToast(`Быстрое сохранение ${slot}`);
+            });
+            
+            document.getElementById(`quick-load-${slot}`).addEventListener('click', () => {
+                emulator.loadState(slot);
+                showToast(`Быстрая загрузка ${slot}`);
+            });
+        });
+
+        // Cheats
+        document.getElementById('add-cheat-button').addEventListener('click', () => {
+            if (!state.currentGame) {
+                showToast('Сначала загрузите игру', 2000);
+                return;
+            }
+            
+            document.getElementById('add-cheat-modal').classList.add('active');
+        });
+
+        document.getElementById('close-cheat-modal').addEventListener('click', () => {
+            document.getElementById('add-cheat-modal').classList.remove('active');
+        });
+
+        document.getElementById('save-cheat-button').addEventListener('click', () => {
+            const name = document.getElementById('cheat-name').value;
+            const code = document.getElementById('cheat-code').value;
+            const description = document.getElementById('cheat-description').value;
+            
+            if (!name || !code) {
+                showToast('Введите название и код', 2000);
+                return;
+            }
+            
+            if (!state.cheats[state.currentGame.name]) {
+                state.cheats[state.currentGame.name] = [];
+            }
+            
+            state.cheats[state.currentGame.name].push({
+                name,
+                code,
+                description,
+                enabled: false
+            });
+            
+            localStorage.setItem('retroblade-cheats', JSON.stringify(state.cheats));
+            renderCheats();
+            document.getElementById('add-cheat-modal').classList.remove('active');
+            
+            // Clear form
+            document.getElementById('cheat-name').value = '';
+            document.getElementById('cheat-code').value = '';
+            document.getElementById('cheat-description').value = '';
+            
+            showToast('Чит-код добавлен');
+        });
+
+        // Multiplayer
+        document.getElementById('host-game-button').addEventListener('click', () => {
+            state.isHost = true;
+            
+            // Initialize PeerJS
+            state.peer = new Peer();
+            
+            state.peer.on('open', (id) => {
+                document.getElementById('host-section').style.display = 'block';
+                document.getElementById('join-section').style.display = 'none';
+                document.getElementById('room-id').value = id;
+                
+                updatePeerStatus(true, 'Ожидание подключения...');
+                
+                // Listen for connections
+                state.peer.on('connection', (conn) => {
+                    state.peerConnection = conn;
+                    
+                    conn.on('open', () => {
+                        updatePeerStatus(true, 'Подключено к игроку');
+                        
+                        // Send game state periodically
+                        setInterval(() => {
+                            if (state.peerConnection && state.peerConnection.open) {
+                                const state = emulator.getState();
+                                state.peerConnection.send({
+                                    type: 'gameState',
+                                    state: state
+                                });
+                            }
+                        }, 100);
+                    });
+                    
+                    conn.on('data', (data) => {
+                        if (data.type === 'input') {
+                            // Handle input from peer
+                            emulator.setInput(data.input);
+                        }
+                    });
+                    
+                    conn.on('close', () => {
+                        updatePeerStatus(false, 'Соединение закрыто');
+                    });
+                });
+            });
+            
+            state.peer.on('error', (err) => {
+                console.error('PeerJS error:', err);
+                updatePeerStatus(false, 'Ошибка подключения');
+            });
+        });
+
+        document.getElementById('join-game-button').addEventListener('click', () => {
+            document.getElementById('host-section').style.display = 'none';
+            document.getElementById('join-section').style.display = 'block';
+        });
+
+        document.getElementById('copy-room-id').addEventListener('click', () => {
+            const roomId = document.getElementById('room-id');
+            roomId.select();
+            document.execCommand('copy');
+            showToast('ID комнаты скопирован');
+        });
+
+        document.getElementById('connect-peer-button').addEventListener('click', () => {
+            const roomId = document.getElementById('join-room-id').value;
+            if (!roomId) {
+                showToast('Введите ID комнаты', 2000);
+                return;
+            }
+            
+            state.isHost = false;
+            state.peer = new Peer();
+            
+            state.peer.on('open', () => {
+                state.peerConnection = state.peer.connect(roomId);
+                
+                state.peerConnection.on('open', () => {
+                    updatePeerStatus(true, 'Подключено к хосту');
+                    
+                    // Receive game state from host
+                    state.peerConnection.on('data', (data) => {
+                        if (data.type === 'gameState') {
+                            emulator.setState(data.state);
+                        }
+                    });
+                });
+                
+                state.peerConnection.on('close', () => {
+                    updatePeerStatus(false, 'Соединение закрыто');
+                });
+                
+                state.peerConnection.on('error', (err) => {
+                    console.error('Peer connection error:', err);
+                    updatePeerStatus(false, 'Ошибка подключения');
+                });
+            });
+            
+            state.peer.on('error', (err) => {
+                console.error('PeerJS error:', err);
+                updatePeerStatus(false, 'Ошибка подключения');
+            });
+        });
+
+        function updatePeerStatus(connected, message) {
+            const indicator = document.querySelector('.delta-peer-status-indicator');
+            const text = document.getElementById('peer-status-text');
+            
+            if (connected) {
+                indicator.classList.add('connected');
+                indicator.classList.remove('disconnected');
+            } else {
+                indicator.classList.remove('connected');
+                indicator.classList.add('disconnected');
+            }
+            
+            text.textContent = message;
+        }
+
+        // Settings
+        document.getElementById('dark-theme-toggle').addEventListener('change', (e) => {
+            state.settings.darkTheme = e.target.checked;
+            localStorage.setItem('retroblade-settings', JSON.stringify(state.settings));
+            updateTheme();
+        });
+
+        document.getElementById('pixel-scaling-toggle').addEventListener('change', (e) => {
+            state.settings.pixelScaling = e.target.checked;
+            localStorage.setItem('retroblade-settings', JSON.stringify(state.settings));
+            emulator.setOption('integerScaling', state.settings.pixelScaling);
+        });
+
+        document.getElementById('configure-keyboard-button').addEventListener('click', () => {
+            document.getElementById('keyboard-config-modal').classList.add('active');
+            renderKeyboardControls();
+        });
+
+        document.getElementById('configure-gamepad-button').addEventListener('click', () => {
+            if (!state.gamepadConnected) {
+                showToast('Подключите геймпад', 2000);
+                return;
+            }
+            document.getElementById('gamepad-config-modal').classList.add('active');
+        });
+
+        document.getElementById('close-keyboard-config').addEventListener('click', () => {
+            document.getElementById('keyboard-config-modal').classList.remove('active');
+        });
+
+        document.getElementById('close-gamepad-config').addEventListener('click', () => {
+            document.getElementById('gamepad-config-modal').classList.remove('active');
+        });
+
+        function renderKeyboardControls() {
+            const container = document.getElementById('keyboard-controls-config');
+            container.innerHTML = '';
+            
+            for (const [button, key] of Object.entries(state.settings.controls.keyboard)) {
+                const controlDiv = document.createElement('div');
+                controlDiv.className = 'delta-list-item';
+                controlDiv.innerHTML = `
+                    <span style="text-transform: capitalize;">${button}</span>
+                    <div class="delta-badge" data-button="${button}" data-type="keyboard">${key}</div>
+                `;
+                
+                controlDiv.querySelector('.delta-badge').addEventListener('click', function() {
+                    if (this.classList.contains('waiting')) return;
+                    
+                    this.textContent = 'Нажмите клавишу...';
+                    this.classList.add('waiting');
+                    
+                    const keyHandler = (e) => {
+                        e.preventDefault();
+                        const key = e.key.length === 1 ? e.key.toUpperCase() : e.key;
+                        state.settings.controls.keyboard[button] = key;
+                        this.textContent = key;
+                        this.classList.remove('waiting');
+                        document.removeEventListener('keydown', keyHandler);
+                        localStorage.setItem('retroblade-settings', JSON.stringify(state.settings));
+                    };
+                    
+                    document.addEventListener('keydown', keyHandler);
+                });
+                
+                container.appendChild(controlDiv);
+            }
+        }
+
+        // Gamepad button configuration
+        document.querySelectorAll('.delta-gamepad-button[data-button]').forEach(button => {
+            button.addEventListener('click', function() {
+                if (this.classList.contains('active')) return;
+                
+                document.querySelectorAll('.delta-gamepad-button').forEach(btn => {
+                    btn.classList.remove('active');
+                });
+                
+                this.classList.add('active');
+                this.textContent = 'Нажмите кнопку...';
+                
+                const buttonName = this.getAttribute('data-button');
+                const gamepadHandler = () => {
+                    const gamepad = navigator.getGamepads()[0];
+                    if (!gamepad) return;
+                    
+                    for (let i = 0; i < gamepad.buttons.length; i++) {
+                        if (gamepad.buttons[i].pressed) {
+                            state.settings.controls.gamepad[buttonName] = i;
+                            this.textContent = `Кнопка ${i}`;
+                            this.classList.remove('active');
+                            localStorage.setItem('retroblade-settings', JSON.stringify(state.settings));
+                            window.removeEventListener('gamepadbuttondown', gamepadHandler);
+                            break;
+                        }
+                    }
+                };
+                
+                window.addEventListener('gamepadbuttondown', gamepadHandler);
+            });
+        });
+
+        // Tab switching
+        document.querySelectorAll('.delta-tab').forEach(tab => {
+            tab.addEventListener('click', function() {
+                document.querySelectorAll('.delta-tab').forEach(t => t.classList.remove('active'));
+                document.querySelectorAll('.delta-tab-content').forEach(c => c.classList.remove('active'));
+                
+                this.classList.add('active');
+                const tabId = this.getAttribute('data-tab');
+                document.getElementById(`${tabId}-tab`).classList.add('active');
+                
+                // Special handling for certain tabs
+                if (tabId === 'cheats') {
+                    renderCheats();
+                }
+            });
+        });
+
+        // Initialize
+        window.addEventListener('DOMContentLoaded', function() {
+            initUI();
+            
+            // Start gamepad detection
+            window.addEventListener("gamepadconnected", function() {
+                checkGamepads();
+            });
+
+            window.addEventListener("gamepaddisconnected", function() {
+                checkGamepads();
+            });
+
+            checkGamepads();
+        });
+    </script>
+</body>
+</html>
